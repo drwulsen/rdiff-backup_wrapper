@@ -1,0 +1,9 @@
+- **$RECYCLE.BIN
+- **.trash
+- /home/*/.cache
+- /home/portage
+/home
+/etc
+- /var/db/repos/gentoo/*
+- /var/spool/*
+/var
