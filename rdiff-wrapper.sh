@@ -63,7 +63,7 @@ function check_cookie () {	# check if cookie exists
 	fi
 }
 function backup () {	# actual backup command
-	backup_params=(--verbosity 3 --terminal-verbosity 4 --api-version 201 backup --include-globbing-filelist $filelist --exclude '**' / $backupdir)
+	backup_params=(--verbosity 3 --terminal-verbosity 3 --api-version 201 backup --include-globbing-filelist $filelist --exclude '**' / $backupdir)
 	log "Executing backup command: rdiff-backup $backup_params" "log"
 	rdiff-backup "${backup_params[@]}" || quit "Backup failed with errorcode $?"
 	return "$?"
