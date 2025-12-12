@@ -1,29 +1,27 @@
 # A simple script to automate rdiff-backup tasks
-It can be run manually or by cron,
-prints status and error messages to syslog,
-will take a variety of backup target descriptions:
-directory OR NAME (/dev/sda1), MOUNTPOINT (/mnt/backup), PARTLABEL(backup-disk), (FS)LABEL (backups), PARTUUID,  (FS)UUID
-It can mount and unmount devices for the backup, so a "cold" disk stays attached and is only mounted for backups.
-By default, it creates a subdirectory for your hostname, so you could use the same disk on multiple machines.
+It can be run manually or by cron,<br />
+prints status and error messages to syslog,<br />
+will take a variety of backup target descriptions:<br />
+directory OR NAME (/dev/sda1), MOUNTPOINT (/mnt/backup), PARTLABEL(backup-disk), (FS)LABEL (backups), PARTUUID,  (FS)UUID<br />
+It can mount and unmount devices for the backup, so a "cold" disk stays attached and is only mounted for backups.<br />
+By default, it creates a subdirectory for your hostname, so you could use the same disk on multiple machines.<br />
 
-File list can be placed in /etc/rdiff-backup/ - e.g:
-  /etc/rdiff-backup/rdiff-backup.daily
-  /etc/rdiff-backup/rdiff-backup.weekly
-and called by the "-e" parameter
+**File lists** can be placed in /etc/rdiff-backup/ - e.g:<br />
+*&ensp;&ensp;&ensp;&ensp;/etc/rdiff-backup/rdiff-backup.daily<br />
+&ensp;&ensp;&ensp;&ensp;/etc/rdiff-backup/rdiff-backup.weekly*<br />
+and called by the *-e* parameter
 
 ### Usage and options:
-  rdiff-wrapper.sh -e daily -d /mnt/backup -m -u
-  rdiff-wrapper.sh -e monthly -t bu-in -m -u
-
-#### MANDATORY
-  -e 	will be appended to the default input file list name, e.g. "-e daily": /etc/rdiff-backup/rdiff-backup.daily
-  -d	directory - e.g. \"mnt/backup/\"
-#### OR
-  -t	target NAME (/dev/sda1), MOUNTPOINT (/mnt/backup), PARTLABEL(backup-disk), (FS)LABEL (backups), PARTUUID,  (FS)UUID
-	
-#### OPTIONAL
-  -s name of a subdirectory to place your backup into. Defaults to hostname
-  -m if target (-t) is a device and not mounted, try to mount it
-  -u if target was not mounted before the backup, unmount it afterwards
+*&ensp;&ensp;&ensp;&ensp;rdiff-wrapper.sh -e daily -d /mnt/backup -m -u<br />
+&ensp;&ensp;&ensp;&ensp;rdiff-wrapper.sh -e monthly -t bu-in -m -u*<br />
+**MANDATORY**<br />
+&ensp;&ensp;&ensp;&ensp;-e&ensp;&ensp;&ensp;&ensp;will be appended to the default input file list name, e.g. "-e daily": /etc/rdiff-backup/rdiff-backup.daily<br />
+&ensp;&ensp;&ensp;&ensp;-d&ensp;&ensp;&ensp;&ensp;directory - e.g. "mnt/backup/"<br />
+&ensp;&ensp;&ensp;&ensp;**OR**<br />
+&ensp;&ensp;&ensp;&ensp;-t&ensp;&ensp;&ensp;&ensp;target NAME (/dev/sda1), MOUNTPOINT (/mnt/backup), PARTLABEL(backup-disk), (FS)LABEL (backups), PARTUUID,  (FS)UUID<br />
+**OPTIONAL**<br />
+&ensp;&ensp;&ensp;&ensp;-s&ensp;&ensp;&ensp;&ensp;name of a subdirectory to place your backup into. Defaults to hostname<br />
+&ensp;&ensp;&ensp;&ensp;-m&ensp;&ensp;&ensp;&ensp;if target (-t) is a device and not mounted, try to mount it<br />
+&ensp;&ensp;&ensp;&ensp;-u&ensp;&ensp;&ensp;&ensp;if target was not mounted before the backup, unmount it afterwards<br />
 
 ## There's no warranty for anything, though.
