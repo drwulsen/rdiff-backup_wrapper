@@ -4,6 +4,7 @@ will take a variety of backup target descriptions:<br />
 directory **OR** NAME (/dev/sda1), MOUNTPOINT (/mnt/backup), PARTLABEL(backup-disk), (FS)LABEL (backups), PARTUUID,  (FS)UUID<br />
 It can mount and unmount devices for the backup, so a "cold" disk stays attached and is only mounted for backups.<br />
 By default, it creates a subdirectory for your hostname, so you could use the same disk on multiple machines.<br />
+<br />
 **Important:** On your target (directory, device root) you need to create a file name *.is-backup-target*<br />
 this is a safeguard to prevent mistakes and writing giga- to terabytes in the wrong location.
 
