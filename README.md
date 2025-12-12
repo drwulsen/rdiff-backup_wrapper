@@ -1,8 +1,7 @@
 # A simple script to automate rdiff-backup tasks
-It can be run manually or by cron,<br />
-prints status and error messages to syslog,<br />
+It can be run manually or by cron, prints status and error messages to syslog,<br />
 will take a variety of backup target descriptions:<br />
-directory OR NAME (/dev/sda1), MOUNTPOINT (/mnt/backup), PARTLABEL(backup-disk), (FS)LABEL (backups), PARTUUID,  (FS)UUID<br />
+directory **OR** NAME (/dev/sda1), MOUNTPOINT (/mnt/backup), PARTLABEL(backup-disk), (FS)LABEL (backups), PARTUUID,  (FS)UUID<br />
 It can mount and unmount devices for the backup, so a "cold" disk stays attached and is only mounted for backups.<br />
 By default, it creates a subdirectory for your hostname, so you could use the same disk on multiple machines.<br />
 
