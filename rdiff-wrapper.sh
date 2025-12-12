@@ -1,6 +1,5 @@
 #!/bin/bash
 # script for automating rdiff-backup
-set -x
 # user variables
 config_dir="/etc/rdiff-backup"	# config file location
 cookie=".is-backup-target"	# check this file for existence to assume the disk is mounted
@@ -19,7 +18,7 @@ function usage () {
 	- OPTIONAL -
 	-s name of a subdirectory to place your backup into. Defaults to hostname (${subdir})
 	-m if target (-t) is a device and not mounted, try to mount it
-	-u if target was not mounted before the backup, unmount it afterwards"
+	-u if target (-t) is a device, unmount it afterwards"
 }
 function log () {	# log message to stdout, optional log to syslog
 	echo "$1"
@@ -36,11 +35,11 @@ function quit () {	# exit point with message and errorlevel
 	log "$1" "log"
 	exit "$errorlevel"
 }
-function get_devpath () {	#get block device path, scols filters are a real mess to write here
+function get_devpath () {	# get block device path, scols filters are a real mess to write here
 	dp="$(lsblk --noempty --noheadings --output PATH --filter \
 	'NAME=='\""$1"\"' || PARTLABEL=='\""$1"\"' || LABEL=='\""$1"\"' || UUID=='\""$1"\"' || PARTUUID=='\""$1"\"' || MOUNTPOINT=='\""$1"\"'')"
 	if [ -n "$dp" ]; then
-		printf '%s' "$dp"
+		printf '%s\n' "$dp"
 		return 0
 	else
 		return 1
@@ -49,7 +48,7 @@ function get_devpath () {	#get block device path, scols filters are a real mess 
 function get_mountpoint () {	# get mountpoint of device
 	mp="$(grep -w "$1" /proc/mounts | awk '{ printf $2 }')"
 	if [ -d "$mp" ]; then
-		printf '%s' "$mp"
+		printf '%s\n' "$mp"
 		return 0
 	else
 		return 1
@@ -57,7 +56,7 @@ function get_mountpoint () {	# get mountpoint of device
 }
 function check_cookie () {	# check if cookie exists
 	if [ -f "${1}/${cookie}" ]; then
-		printf '%s' "${1}/${cookie}"
+		printf '%s\n' "${1}/${cookie}"
 		return 0
 	else
 		return 1
@@ -66,7 +65,8 @@ function check_cookie () {	# check if cookie exists
 function backup () {	# actual backup command
 	backup_params="(--verbosity 4 --terminal-verbosity 5 --api-version 201 backup --include-globbing-filelist $filelist --exclude '**' / $backupdir)"
 	log "Executing backup command: rdiff-backup $backup_params" "log"
-	echo #rdiff-backup "$backup_params" || quit "Backup failed with errorcode $?"
+	rdiff-backup "$backup_params" || quit "Backup failed with errorcode $?"
+	return "$?"
 }
 # actual control flow
 while getopts "d:e:s:t:mu" opt; do	# get command-line options
@@ -81,6 +81,9 @@ while getopts "d:e:s:t:mu" opt; do	# get command-line options
         quit;;
 	esac
 done
+if [ "$(id -u)" -ne 0 ]; then	# check if we are running as root
+  quit "Please run the backup script as root or through sudo for proper access permissions"
+fi
 if [[ -n $target_dev && -n $target_dir ]]; then	# check mandatory parameters and filelist
 	quit "Both targets, directory and device have been given, please choose only one"
 	elif [ -z "$target_dev" ] && [ -z "$target_dir" ]; then
@@ -91,9 +94,6 @@ if [[ -n $target_dev && -n $target_dir ]]; then	# check mandatory parameters and
 		quit "File list \"${config_dir}/rdiff-backup.${extension}\" does NOT exist"
 	elif [ -f "${config_dir}/rdiff-backup.${extension}" ]; then
 		filelist="${config_dir}/rdiff-backup.${extension}"
-fi
-if [ "$(id -u)" -ne 0 ]; then	# check if we are running as root
-  quit "Please run the backup script as root or through sudo for proper access permissions"
 fi
 if [ -n "$target_dir" ]; then	# check if directory and cookie exist, then start backup
 	if [ -d "$target_dir" ]; then
@@ -110,14 +110,12 @@ if [ -n "$target_dev" ]; then	# get target device path, mount status, mount if n
 	if [ -d "$mountpoint" ]; then	# device already mounted
 		log "Device $devpath (${target_dev}) was already mounted under $mountpoint" "log"
 		check_cookie "$mountpoint" || quit "Could not find cookie file in $mountpoint"
-		was_mounted="1"
 		backupdir="${mountpoint}/${subdir}"
 		backup
 	elif [ "$do_mount" != 'true' ]; then	# device not mounted already
 		quit "Device $devpath (${target_dev}) not mounted, mount option (-m) not given, quitting"
 	elif [ "$do_mount" = 'true' ]; then
 		log "Device $devpath (${target_dev}) not mounted, attempting mount"
-		was_mounted="0"
 		mount "$devpath" || quit "Could not mount target device $devpath (${target_dev}) on $mountpoint"
 		mountpoint="$(get_mountpoint "$devpath")"
 		log "Mounted device $devpath (${target_dev}) on $mountpoint"
@@ -126,7 +124,7 @@ if [ -n "$target_dev" ]; then	# get target device path, mount status, mount if n
 		backup
 	fi
 fi
-if [[ "$do_umount" = 'true' && "$was_mounted" -ne 0 ]]; then	# Unmount device, if requested
+if [[ -n "$target_dev" && "$do_umount" = 'true' ]]; then	# Unmount device, if requested
   log "Requested to umount device after backup" "log"
   umount "$mountpoint" || quit "$devpath failed to unmount with errorcode $?"
   log "$devpath unmounted successfully" "log"
