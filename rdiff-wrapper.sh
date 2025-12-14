@@ -11,7 +11,7 @@ cleanup_exitcode=""
 umount_exitcode=""
 #set -x
 function _chain () {
-backupdir="${bu_rootdir}/${subdir}"
+backupdir="${bu_rootdir}/${subdir}/${extension}"
 check_cookie "$bu_rootdir" || exit "$?"
 backup || exit "$?"
 cleanup || exit "$?"
