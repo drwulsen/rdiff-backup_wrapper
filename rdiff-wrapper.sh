@@ -13,7 +13,7 @@ function usage () {
 	
 	-d	directory - e.g. \"mnt/backup/\"
 	##	OR	##
-	-t	target NAME (/dev/sda1), MOUNTPOINT (/mnt/backup), PARTLABEL(backup-disk), (FS)LABEL (backups), PARTUUID,  (FS)UUID
+	-t	target NAME (/dev/sda1), PARTLABEL(backup-disk), (FS)LABEL (backups), PARTUUID,  (FS)UUID
 	
 	- OPTIONAL -
 	-s name of a subdirectory to place your backup into. Defaults to hostname (${subdir})
@@ -37,7 +37,7 @@ function quit () {	# exit point with message and errorlevel
 }
 function get_devpath () {	# get block device path, scols filters are a real mess to write here
 	dp="$(lsblk --noempty --noheadings --output PATH --filter \
-	'NAME=='\""$1"\"' || PARTLABEL=='\""$1"\"' || LABEL=='\""$1"\"' || UUID=='\""$1"\"' || PARTUUID=='\""$1"\"' || MOUNTPOINT=='\""$1"\"'')"
+	'NAME=='\""$1"\"' || PARTLABEL=='\""$1"\"' || LABEL=='\""$1"\"' || UUID=='\""$1"\"' || PARTUUID=='\""$1"\"'')"
 	if [ -n "$dp" ]; then
 		printf '%s\n' "$dp"
 		return 0
