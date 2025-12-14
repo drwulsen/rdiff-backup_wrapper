@@ -18,7 +18,7 @@ cleanup || exit "$?"
 umount_disk || exit "$?"
 }
 function backup () {	# actual backup command
-	backup_params=('--verbosity' '3' '--api-version' '201' 'backup' '--include-globbing-filelist' "$filelist" '--exclude' '**' '/' "$backupdir")
+	backup_params=('--verbosity' '3' '--api-version' '201' 'backup' '--create-full-path' '--include-globbing-filelist' "$filelist" '--exclude' '**' '/' "$backupdir")
 	log "INFO: Backup: rdiff-backup ${backup_params[*]}" "log"
 	rdiff-backup "${backup_params[@]}"
 	bu_exitcode="$?"
@@ -51,12 +51,14 @@ function cleanup () {	# delete older backups
 			cleanup_exitcode="$?"
 		fi
 	fi
-if [ "$cleanup_exitcode" -ne 0 ]; then
-	log "ERROR: Cleanup exited with exit value $cleanup_exitcode" "log"
-	return "$cleanup_exitcode"
-else
-	log "SUCCESS: Cleanup done" "log"
-	return "$cleanup_exitcode"
+if [ -n "$cleanup_exitcode" ]; then
+	if [ "$cleanup_exitcode" -ne 0 ]; then
+		log "ERROR: Cleanup exited with exit value $cleanup_exitcode" "log"
+		return "$cleanup_exitcode"
+	else
+		log "SUCCESS: Cleanup done" "log"
+		return "$cleanup_exitcode"
+	fi
 fi
 }
 function get_devpath () {	# get block device path, scols filters are a real mess to write here
