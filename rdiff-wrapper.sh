@@ -1,6 +1,5 @@
 #!/bin/bash
 # script for automating rdiff-backup
-set -x
 # user variables
 config_dir="/etc/rdiff-backup"	# config file location
 cookie=".is-backup-target"	# check this file for existence to assume the disk is mounted
