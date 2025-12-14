@@ -22,6 +22,7 @@ and called by the *-e* parameter
 &ensp;&ensp;&ensp;&ensp;**OR**<br />
 &ensp;&ensp;&ensp;&ensp;-t&ensp;&ensp;&ensp;&ensp;target NAME (/dev/sda1), MOUNTPOINT (/mnt/backup), PARTLABEL(backup-disk), (FS)LABEL (backups), PARTUUID,  (FS)UUID<br />
 **OPTIONAL**<br />
+&ensp;&ensp;&ensp;&ensp;-r&ensp;&ensp;&ensp;&ensp;retention time, backups older than this will be deleted. (1d, 2M, 3Y, etc)<br />
 &ensp;&ensp;&ensp;&ensp;-s&ensp;&ensp;&ensp;&ensp;name of a subdirectory to place your backup into. Defaults to hostname<br />
 &ensp;&ensp;&ensp;&ensp;-m&ensp;&ensp;&ensp;&ensp;if target (-t) is a device and not mounted, try to mount it<br />
 &ensp;&ensp;&ensp;&ensp;-u&ensp;&ensp;&ensp;&ensp;if target was not mounted before the backup, unmount it afterwards<br />
