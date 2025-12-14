@@ -12,41 +12,55 @@ umount_exitcode=""
 #set -x
 function _chain () {
 backupdir="${bu_rootdir}/${subdir}"
-check_cookie "$bu_rootdir" || quit "Cookie file not found in $bu_rootdir"
-backup || log "Backup failed with errorcode $bu_exitcode" "log"
-cleanup || log "Removing older backups failed with errorcode $cleanup_exitcode" "log"
-umount_disk
+check_cookie "$bu_rootdir" || exit "$?"
+backup || exit "$?"
+cleanup || exit "$?"
+umount_disk || exit "$?"
 }
 function backup () {	# actual backup command
 	backup_params=('--verbosity' '3' '--api-version' '201' 'backup' '--include-globbing-filelist' "$filelist" '--exclude' '**' '/' "$backupdir")
-	log "Backup: rdiff-backup ${backup_params[*]}" "log"
+	log "INFO: Backup: rdiff-backup ${backup_params[*]}" "log"
 	rdiff-backup "${backup_params[@]}"
 	bu_exitcode="$?"
-	return "$bu_exitcode"
+	if [ "$bu_exitcode" -ne 0 ]; then
+		log "ERROR: Backup did not exit clean, exit value $bu_exitcode" "log"
+		return "$bu_exitcode"
+	else
+		log "SUCCESS: Backup completed" "log"
+		return "$bu_exitcode"
+	fi
 }
 function check_cookie () {	# check if cookie exists
 	if [ -f "${1}/${cookie}" ]; then
-		printf '%s\n' "${1}/${cookie}"
+		log "INFO: Cookie file found: ${1}/${cookie}" "log"
 		return 0
 	else
+		log "ERROR: Cookie file not found: ${1}/${cookie}" "log"
 		return 1
 	fi
 }
 function cleanup () {	# delete older backups
-	if [[ -n "$retention" && "$bu_exitcode" -eq 0 ]]; then
-		cleanup_params=('--api-version' '201' 'remove' 'increments' '--older-than' "$retention" "$backupdir")
-		log "Cleaning up: rdiff-backup ${cleanup_params[*]}" "log"
-		rdiff-backup "${cleanup_params[@]}"
-		cleanup_exitcode="$?"
-		return "$cleanup_exitcode"
-	elif [[ -n "$retention" && "$bu_exitcode" -ne 0 ]]; then
-		log "Backup did not exit clean (return code: ${bu_exitcode}), not deleting older backups" "log"
-		cleanup_exitcode="0"
-		return 0
+	if [ -n "$retention" ]; then
+		if [ "$bu_exitcode" -ne 0 ]; then
+			log "ERROR: Backup did not exit clean, not deleting older backups" "log"
+			return "$bu_exitcode"
+		else
+			cleanup_params=('--api-version' '201' 'remove' 'increments' '--older-than' "$retention" "$backupdir")
+			log "INFO: Cleaning up: rdiff-backup ${cleanup_params[*]}" "log"
+			rdiff-backup "${cleanup_params[@]}"
+			cleanup_exitcode="$?"
+		fi
 	fi
+if [ "$cleanup_exitcode" -ne 0 ]; then
+	log "ERROR: Cleanup exited with exit value $cleanup_exitcode" "log"
+	return "$cleanup_exitcode"
+else
+	log "SUCCESS: Cleanup done" "log"
+	return "$cleanup_exitcode"
+fi
 }
 function get_devpath () {	# get block device path, scols filters are a real mess to write here
-	dp="$(lsblk --noempty --noheadings --output PATH --filter \
+	dp="$(lsblk --noempty --noheadings --path --output PATH --filter \
 	'NAME=='\""$1"\"' || PARTLABEL=='\""$1"\"' || LABEL=='\""$1"\"' || UUID=='\""$1"\"' || PARTUUID=='\""$1"\"'')"
 	if [ -n "$dp" ]; then
 		printf '%s\n' "$dp"
@@ -72,14 +86,14 @@ function log () {	# log message to stdout, optional log to syslog
 }
 function umount_disk () {	# umount disks, if desired
 if [[ -n "$target_dev" && "$do_umount" = 'true' ]]; then	# Unmount device, if requested
-  log "Requested to umount device after backup" "log"
+  log "INFO: Requested to unmount device after backup" "log"
   umount -R "$mountpoint"
   umount_exitcode="$?"
   if [ "$umount_exitcode" -ne 0 ]; then
-		log "$devpath failed to unmount with errorcode $umount_exitcode" "log"
+		log "ERROR: $devpath failed to unmount with exit value $umount_exitcode" "log"
 		return "$umount_exitcode"
 	else
-		log "$devpath unmounted successfully" "log"
+		log "SUCCESS: $devpath unmounted" "log"
 		return 0
 	fi
 fi
@@ -101,12 +115,12 @@ function usage () {
 }
 function quit () {	# exit point with message and errorlevel
 	if [ -z "$2" ]; then
-		errorlevel='1'
+		exitcode='1'
 	else
-		errorlevel="$2"
+		exitcode="$2"
 	fi
 	log "$1" "log"
-	exit "$errorlevel"
+	exit "$exitcode"
 }
 # actual control flow
 while getopts "d:e:r:s:t:mu" opt; do	# get command-line options
@@ -123,40 +137,42 @@ while getopts "d:e:r:s:t:mu" opt; do	# get command-line options
 	esac
 done
 if [ "$(id -u)" -ne 0 ]; then	# check if we are running as root, quit otherwise
-  quit "Please run the backup script as root or through sudo for proper access permissions"
+  quit "ERROR: Please run the backup script as root or through sudo for proper access permissions"
 fi
 if [[ -n "$target_dev" && -n "$target_dir" ]]; then	# check mandatory parameters and filelist, quit on errors
-	quit "Both targets, directory and device have been given, please choose only one"
+	quit "ERROR: Both targets, directory and device have been given, please choose only one"
 	elif [ -z "$target_dev" ] && [ -z "$target_dir" ]; then
-		quit "Both targets, directory (-d) and device (-t) have NOT been given, please provide (only) one"
+		quit "ERROR: Neither target (-t) nor directory (-d) given, please provide (only) one"
 	elif [ -z "$extension" ]; then
-		quit	"Extension (-e) not set, please provide one"
+		quit	"ERROR: Extension (-e) not set, please provide one"
 	elif ! [ -f "${config_dir}/rdiff-backup.${extension}" ]; then
-		quit "File list \"${config_dir}/rdiff-backup.${extension}\" does NOT exist"
+		quit "ERROR: File list ${config_dir}/rdiff-backup.${extension} does not exist"
 	elif [ -f "${config_dir}/rdiff-backup.${extension}" ]; then
 		filelist="${config_dir}/rdiff-backup.${extension}"
 fi
-if [ -d "$target_dir" ]; then	# check if directory exists
+if [ -n "$target_dir" ]; then	# check if directory exists
+	if [ -d "$target_dir" ]; then
 		bu_rootdir="$target_dir"
 		_chain
 	else
-		quit "Target directory \"$target_dir\" does not exist or is no directory"
+		quit "ERROR: Target directory $target_dir does not exist or is no directory"
+	fi
 fi
 if [ -n "$target_dev" ]; then	# get target device path, mount status, mount if necessary
-	devpath="$(get_devpath "$target_dev")" || quit "Could not find device path for $target_dev"
+	devpath="$(get_devpath "$target_dev")" || quit "ERROR: could not find device path for $target_dev"
 	mountpoint="$(get_mountpoint "$devpath")"
 	if [ -d "$mountpoint" ]; then	# device already mounted
-		log "Device $devpath (${target_dev}) was already mounted under $mountpoint" "log"
+		log "INFO: Device $devpath (${target_dev}) was already mounted under $mountpoint" "log"
 		bu_rootdir="${mountpoint}"
 		_chain
 	elif [ "$do_mount" = 'true' ]; then
-		log "Device $devpath (${target_dev}) not mounted, attempting mount"
-		mount "$devpath" || quit "Could not mount target device $devpath (${target_dev}) on $mountpoint"
+		log "INFO: Device $devpath (${target_dev}) not mounted, attempting mount" "log"
+		mount "$devpath" || quit "ERROR: Could not mount target device $devpath (${target_dev}) on $mountpoint"
 		mountpoint="$(get_mountpoint "$devpath")"
-		log "Mounted device $devpath (${target_dev}) on $mountpoint"
+		log "INFO: Mounted device $devpath (${target_dev}) on $mountpoint" "log"
 		bu_rootdir="${mountpoint}"
 		_chain
 	elif [ "$do_mount" != 'true' ]; then	# device not mounted already
-		quit "Device $devpath (${target_dev}) not mounted, mount option (-m) not given, quitting"
+		quit "ERROR: Device $devpath (${target_dev}) not mounted and mount option (-m) not given, quitting"
 	fi
 fi
