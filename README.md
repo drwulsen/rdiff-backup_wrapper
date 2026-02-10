@@ -27,4 +27,5 @@ and called by the *-e* parameter
 &ensp;&ensp;&ensp;&ensp;-m&ensp;&ensp;&ensp;&ensp;if target (-t) is a device and not mounted, try to mount it<br />
 &ensp;&ensp;&ensp;&ensp;-u&ensp;&ensp;&ensp;&ensp;if target was not mounted before the backup, unmount it afterwards<br />
 
-## There's no warranty for anything, though.
+## There's no warranty for anything, though - it is nude, rude, crude - but worksforme™
+
