@@ -2,8 +2,9 @@
 - **.trash
 - /home/*/.cache
 - /home/portage
-/home
-/etc
++ /home
++ /etc
 - /var/db/repos/gentoo/*
 - /var/spool/*
-/var
++ /var
+- **
