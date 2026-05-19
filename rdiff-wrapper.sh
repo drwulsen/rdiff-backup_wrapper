@@ -18,7 +18,7 @@ cleanup || exit "$?"
 umount_disk || exit "$?"
 }
 function backup () {	# actual backup command
-	backup_params=('--verbosity' '3' '--api-version' '201' 'backup' '--create-full-path' '--include-globbing-filelist' "$filelist" '--exclude' '**' '/' "$backupdir")
+	backup_params=('--verbosity' '3' '--api-version' '201' 'backup' '--create-full-path' '--include-globbing-filelist' "$filelist" '/' "$backupdir")
 	log "INFO: Backup: rdiff-backup ${backup_params[*]}" "log"
 	rdiff-backup "${backup_params[@]}"
 	bu_exitcode="$?"
